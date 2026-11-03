@@ -4,7 +4,7 @@ import { lane } from './lane.js';
 import { readNight } from './digest/read.js';
 import { readStatus } from './status.js';
 import { Layout } from './views/layout.js';
-import { DigestMissing, DigestPage } from './views/digest.js';
+import { DigestMissing, DigestPage, digestRows } from './views/digest.js';
 import { StatusBoard } from './views/status.js';
 
 export function createApp(config: RigConfig = loadConfig()) {
@@ -36,6 +36,16 @@ export function createApp(config: RigConfig = loadConfig()) {
         <DigestPage digest={digest} />
       </Layout>,
     );
+  });
+
+  // JSON twin of the page: same reader call, same row list (null stays null).
+  app.get('/api/digest/:night', (c) => {
+    const night = c.req.param('night');
+    const digest = readNight(config.runsDir, night);
+    if (digest === null) {
+      return c.json({ error: 'no run log for that night', night }, 404);
+    }
+    return c.json({ night: digest.night, badLines: digest.badLines, rows: digestRows(digest) });
   });
 
   return app;
